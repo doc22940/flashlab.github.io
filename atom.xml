@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>J.F&#39;s BLOG</title>
+  
+  <subtitle>T.E.D</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://blog.zzbd.org/"/>
+  <updated>2020-05-30T12:19:24.298Z</updated>
+  <id>https://blog.zzbd.org/</id>
+  
+  <author>
+    <name>J. F</name>
+    
+  </author>
+  
+  <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>在coding自动化部署hexo</title>
+    <link href="https://blog.zzbd.org/2020/05/01/blog-ci/"/>
+    <id>https://blog.zzbd.org/2020/05/01/blog-ci/</id>
+    <published>2020-05-01T11:46:04.000Z</published>
+    <updated>2020-05-30T12:19:24.298Z</updated>
+    
+    <content type="html"><![CDATA[<blockquote><p>从<strong>木木木木木的博客</strong>上发现两篇有意思的文章，于是决定把博客小小改造下。自动化部署，真的就全web界面写博客了；字体异步加载，提高页面载入速度，很早就有这个想法，这次总算比较优雅地解决了。</p></blockquote><h3 id="博客自动化部署"><a href="#博客自动化部署" class="headerlink" title="博客自动化部署"></a>博客自动化部署</h3><p>既然选择了coding作为仓库，顺手采用他家的构建计划，和github actions异曲同工。直接贴出<code>.Jenkinsfile</code></p><a id="more"></a><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">pipeline &#123;</span><br><span class="line">  agent any</span><br><span class="line">  stages &#123;</span><br><span class="line">    stage('检出') &#123;</span><br><span class="line">      steps &#123;</span><br><span class="line">        checkout([</span><br><span class="line">          $class: 'GitSCM',</span><br><span class="line">          branches: [[name: env.GIT_BUILD_REF]],</span><br><span class="line">          doGenerateSubmoduleConfigurations: false,</span><br><span class="line">          extensions: [[$class: 'SubmoduleOption',</span><br><span class="line">          disableSubmodules: false,</span><br><span class="line">          parentCredentials: false,</span><br><span class="line">          recursiveSubmodules: false,</span><br><span class="line">          reference: '',</span><br><span class="line">          trackingSubmodules: false</span><br><span class="line">        ]],</span><br><span class="line">        submoduleCfg: [],</span><br><span class="line">        userRemoteConfigs: [[</span><br><span class="line">          url: env.GIT_REPO_URL,</span><br><span class="line">          credentialsId: env.CREDENTIALS_ID</span><br><span class="line">        ]]])</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    stage('安装依赖') &#123;</span><br><span class="line">      steps &#123;</span><br><span class="line">        sh 'npm install -g hexo-cli'</span><br><span class="line">        sh 'npm install'</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    stage('自动部署') &#123;</span><br><span class="line">      steps &#123;</span><br><span class="line">        sh 'npx gulp deploy'</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>值得一提的是，next主题需要作为submodule一同checkout，deploy使用gulp脚本，生成、压缩、上传一条龙。这里有个<a href="https://github.com/hexojs/hexo-deployer-git/issues/159" target="_blank" rel="noopener">坑</a>，hexo deploy插件的配置需要使用第二种形式。</p><h3 id="异步加载字体文件"><a href="#异步加载字体文件" class="headerlink" title="异步加载字体文件"></a>异步加载字体文件</h3><p>只需要在link标签增加两个属性即可解决这个问题。</p><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">link</span> <span class="attr">rel</span>=<span class="string">"stylesheet"</span> <span class="attr">href</span>=<span class="string">"https://fonts.loli.net/css?family=Source+Sans+Pro:300"</span> <span class="attr">media</span>=<span class="string">"print"</span> <span class="attr">onload</span>=<span class="string">"this.media='all'"</span>&gt;</span></span><br></pre></td></tr></table></figure><h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p><a href="https://immmmm.com/hugo-github-actions/" target="_blank" rel="noopener">Hugo + Github Actions 实现自动化部署</a><br><a href="https://immmmm.com/noto-serif-sc-by-google-fonts/" target="_blank" rel="noopener">添加 Google Fonts 思源宋体</a><br><a href="https://stackoverflow.com/questions/51361907/implicitly-loading-submodules-in-jenkins-pipeline-stages" target="_blank" rel="noopener">Implicitly loading submodules in Jenkins pipeline stages</a></p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;blockquote&gt;
+&lt;p&gt;从&lt;strong&gt;木木木木木的博客&lt;/strong&gt;上发现两篇有意思的文章，于是决定把博客小小改造下。自动化部署，真的就全web界面写博客了；字体异步加载，提高页面载入速度，很早就有这个想法，这次总算比较优雅地解决了。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&quot;博客自动化部署&quot;&gt;&lt;a href=&quot;#博客自动化部署&quot; class=&quot;headerlink&quot; title=&quot;博客自动化部署&quot;&gt;&lt;/a&gt;博客自动化部署&lt;/h3&gt;&lt;p&gt;既然选择了coding作为仓库，顺手采用他家的构建计划，和github actions异曲同工。直接贴出&lt;code&gt;.Jenkinsfile&lt;/code&gt;&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="原创" scheme="https://blog.zzbd.org/categories/%E5%8E%9F%E5%88%9B/"/>
+    
+    
+      <category term="博客" scheme="https://blog.zzbd.org/tags/%E5%8D%9A%E5%AE%A2/"/>
+    
+      <category term="web" scheme="https://blog.zzbd.org/tags/web/"/>
+    
+      <category term="hexo" scheme="https://blog.zzbd.org/tags/hexo/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>wintogo小众玩法</title>
+    <link href="https://blog.zzbd.org/2020/04/01/wintogo/"/>
+    <id>https://blog.zzbd.org/2020/04/01/wintogo/</id>
+    <published>2020-04-01T01:46:50.000Z</published>
+    <updated>2020-05-30T12:19:24.302Z</updated>
+    
+    <content type="html"><![CDATA[<p>一想到win10版minecraft就心痒痒，但又不舍得再买台笔记本（家里已经两台Macbook）。于是盯上了wintogo这个已经被微软抛弃的孩子~。只需买个高速U盘就能有完整的win10体验，不用昂贵的扩容卡，也不占用宝贵的硬盘空间，真香！<br>火速在JD入手一枚闪迪CZ880，259块也还能接受。下面记录完整的制作过程。</p><a id="more"></a><h3 id="制作wintogo"><a href="#制作wintogo" class="headerlink" title="制作wintogo"></a>制作wintogo</h3><p>硬件：一台macbook air 2017、一台win10电脑、sandisk cz880 U盘</p><p>软件：win10企业版镜像+制作工具+mac驱动</p><table><thead><tr><th>名称</th><th>SHA1/获取方式</th><th>大小/版本</th></tr></thead><tbody><tr><td>cn_windows_10_enterprise_ltsc_2019_x64_dvd_9c09ff24.iso</td><td>24b59706d5eded392423936c82ba5a83596b50cc</td><td>4,478,906,368</td></tr><tr><td>Windows To Go 辅助工具</td><td><a href="https://bbs.luobotou.org/thread-761-1-1.html" target="_blank" rel="noopener">5.1.2</a></td><td>2020-02-10</td></tr><tr><td>WindowsSupport</td><td>BootCamp(启动转换助理)-&gt;菜单栏-&gt;操作-&gt;下载windows支持软件</td><td>～2.8G</td></tr></tbody></table><p>根据下图制作，选择传统模式，UEFI+GPT，暂不分区</p><p><img data-src="http://cdn.zzbd.org/image/wintogo-fs8.png" alt="wintogo-fs8.png"></p><p>写入完成，耗时9分42秒</p><p><img data-src="http://cdn.zzbd.org/image/wintogo2-fs8.png" alt="wintogo2-fs8.png"></p><p>mac关机，插入制作好的U盘，长按<code>option</code>开机，进入安装引导程序，完成后自动重启（无需再按住option键）。进入<code>WindowsSupport/BootCamp</code>运行Setup.exe安装mac驱动，此时已经可以正常使用了。本想安装一个阵营的edge chrome，然鹅无论安装器还是离线程序都失败了，只能选择chrome。</p><h3 id="后续优化"><a href="#后续优化" class="headerlink" title="后续优化"></a>后续优化</h3><ol><li>安装触摸板增强驱动，开源地址imbushuo/<strong><a href="https://github.com/imbushuo/mac-precision-touchpad" target="_blank" rel="noopener">mac-precision-touchpad</a></strong></li><li>修改亮度控制，从macos复制配置文件到wintogo中，关闭自动亮度</li><li>使用<a href="https://www.texim.jp/txbenchus.html" target="_blank" rel="noopener">TxBENCH</a>对SSD进行Trim（未尝试）</li></ol><h3 id="体验"><a href="#体验" class="headerlink" title="体验"></a>体验</h3><p>总体还是很流畅的，开机快于机械盘，稍逊于SSD，打开浏览器这种读写频繁的应用会有点卡。其他就不一一鉴定了，本来也只是为了装个MC。本以为从论坛下离线安装包会更快，没想到死活安装不上，根本不能识别appx文件。可能跟ltsc系统有关。最后还是直装，没想到比离线下载还快😅<br> 进游戏什么的一切正常，发热也还能接受，总之还比较满意。</p><h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a href="https://blog.xieyc.com/sandisk-cz880-wtg-trim/" target="_blank" rel="noopener">地表最强U盘：闪迪CZ880安装Windows To Go（含手动Trim技巧）</a> </p><p><a href="https://bbs.luobotou.org/thread-45586-1-1.html" target="_blank" rel="noopener">在Mac上部署您的Windows To Go工作区 常见问题&amp;使用指南</a></p><p><a href="https://www.bilibili.com/read/cv3013179/" target="_blank" rel="noopener">如何将校色仪ICC配置文件导入（WIN/MAC）系统中进行颜色匹配</a></p><p><a href="https://code.zackzhang.net/post/installing-minecraft-bedrock-dedicated-server-on-ubuntu-18-04.html" target="_blank" rel="noopener">在 Ubuntu 18.04 上搭建 Minecraft 基岩版官方服务端</a></p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;一想到win10版minecraft就心痒痒，但又不舍得再买台笔记本（家里已经两台Macbook）。于是盯上了wintogo这个已经被微软抛弃的孩子~。只需买个高速U盘就能有完整的win10体验，不用昂贵的扩容卡，也不占用宝贵的硬盘空间，真香！&lt;br&gt;火速在JD入手一枚闪迪CZ880，259块也还能接受。下面记录完整的制作过程。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="原创" scheme="https://blog.zzbd.org/categories/%E5%8E%9F%E5%88%9B/"/>
+    
+    
+      <category term="游戏" scheme="https://blog.zzbd.org/tags/%E6%B8%B8%E6%88%8F/"/>
+    
+      <category term="玩物" scheme="https://blog.zzbd.org/tags/%E7%8E%A9%E7%89%A9/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>新VPS配置非Root工作环境</title>
+    <link href="https://blog.zzbd.org/2020/03/20/new-debian/"/>
+    <id>https://blog.zzbd.org/2020/03/20/new-debian/</id>
+    <published>2020-03-20T07:47:21.000Z</published>
+    <updated>2020-05-30T12:19:24.302Z</updated>
+    
+    <content type="html"><![CDATA[<p>简单记录下在腾讯云ECS上简单布置Debian系统的过程</p><a id="more"></a><h3 id="安装nginx及git"><a href="#安装nginx及git" class="headerlink" title="安装nginx及git"></a>安装nginx及git</h3><ol><li><p>首先生成加密算法<code>cd /etc/ssl/certs &amp;&amp; openssl dhparam -out dhparam.pem 4096</code></p></li><li><p>编辑nginx配置文件，打开gzip，指定证书文件路径，重启服务测试之后修改nginx的话还是需要切换到root身份。</p></li><li><p>Git安装后配置代理</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">git config --global http.proxy 'socks5h://127.0.0.1:1080'</span><br><span class="line">vim ~/.ssh/config</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># ~/.ssh/config begin</span></span></span><br><span class="line">Host github.com</span><br><span class="line">ProxyCommand nc -X 5 -x 127.0.0.1:1080 %h %p</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># ~/.ssh/config end</span></span></span><br></pre></td></tr></table></figure></li></ol><h3 id="配置用户"><a href="#配置用户" class="headerlink" title="配置用户"></a>配置用户</h3><ol><li><p>输入<code>apt update &amp;&amp; apt install zsh</code>安装zsh替代bash</p></li><li><p>新建用户并指定默认shell<code>useradd -m -s /bin/zsh newfish</code>，以newfish为例</p></li><li><p>给予新用户sudo权限</p></li></ol><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># patch /etc/sudoers with /etc/sudoers.d/</span></span><br><span class="line">tee /etc/sudoers.d/newfish &lt;&lt;&lt; <span class="string">'newfish ALL=(ALL) ALL'</span></span><br><span class="line"><span class="comment"># grant permission</span></span><br><span class="line">chmod 440 /etc/sudoers.d/newfish</span><br></pre></td></tr></table></figure><p>重新用newfish登录服务器，配置zsh的行为，这里建议默认为主，能打开的特性都打开。单独装好zsh是没有高亮显示的，所以使用<a href="https://github.com/ohmyzsh/ohmyzsh" target="_blank" rel="noopener">官方脚本</a>安装oh-my-zsh，默认主题用着就挺好。</p><h3 id="安装node"><a href="#安装node" class="headerlink" title="安装node"></a>安装node</h3><p>由于是非root方式，所以首先安装nvm，运行<a href="https://github.com/nvm-sh/nvm" target="_blank" rel="noopener">官方脚本</a>，这里由于zsh的缘故还不能立刻使用，在<code>.zshrc</code>文件末尾追加上一步安装过程输出的环境变量代码。然后<code>nvm ls-remote</code>查看最新的版本号，<code>nvm install xx.xx.x</code>。尽量不全局安装，运行本地包用<code>npx [包名称]</code>。</p><p>更换国内的CDN源</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">npm config set registry https://registry.npm.taobao.org --global</span><br><span class="line">npm config set disturl https://npm.taobao.org/dist --global</span><br><span class="line"><span class="meta">#</span><span class="bash"> check configuration</span></span><br><span class="line">npm config get registry</span><br></pre></td></tr></table></figure><h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p><a href="https://p3terx.com/archives/add-normal-users-with-adduser-and-useradd.html" target="_blank" rel="noopener">Linux 使用 adduser 与 useradd 添加普通用户的正确姿势</a></p><p><a href="https://zhuanlan.zhihu.com/p/83767376" target="_blank" rel="noopener">Zsh 入门 - 知乎</a></p><p><a href="https://gist.github.com/laispace/666dd7b27e9116faece6" target="_blank" rel="noopener">git 设置和取消代理</a></p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;简单记录下在腾讯云ECS上简单布置Debian系统的过程&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="原创" scheme="https://blog.zzbd.org/categories/%E5%8E%9F%E5%88%9B/"/>
+    
+    
+      <category term="linux" scheme="https://blog.zzbd.org/tags/linux/"/>
+    
+      <category term="教程" scheme="https://blog.zzbd.org/tags/%E6%95%99%E7%A8%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>简易web terminal解决方案</title>
+    <link href="https://blog.zzbd.org/2020/03/13/ttyd/"/>
+    <id>https://blog.zzbd.org/2020/03/13/ttyd/</id>
+    <published>2020-03-13T06:25:54.000Z</published>
+    <updated>2020-05-30T12:19:24.302Z</updated>
+    
+    <content type="html"><![CDATA[<p>为了方便最快速度打开远程连接，浏览器是个不错的终端载体。在github上看到ttyd项目，麻雀虽小，五脏俱全，符合web terminal的需求，爱了爱了。另外，作者似乎还是MC玩家，折腾过树莓派，简直偶像有木有😘</p><a id="more"></a><p>首先安装必要依赖</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 按需安装前置依赖</span></span><br><span class="line">sudo apt-get install build-essential cmake git libjson-c-dev</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装libwebsockets依赖包</span></span><br><span class="line">sudo apt install libuv1-dev</span><br><span class="line"><span class="meta">#</span><span class="bash"> 检查libwebsockets版本，需要&gt;2.1</span></span><br><span class="line">sudo apt-cache show libwebsockets-dev</span><br><span class="line"><span class="meta">#</span><span class="bash"> 手动安装，从https://github.com/warmcat/libwebsockets/releases下载2.1.1版本</span></span><br><span class="line">unzip libwebsockets-2.1.1.zip &amp;&amp; cd libwebsockets-2.1.1</span><br><span class="line">mkdir build &amp;&amp; cd build</span><br><span class="line">cmake .. -DLWS_WITH_LIBUV=ON</span><br><span class="line">make</span><br><span class="line">sudo make install</span><br><span class="line">sudo ldconfig</span><br></pre></td></tr></table></figure><p>从<a href="https://github.com/tsl0922/ttyd" target="_blank" rel="noopener">官方仓库</a>克隆到本地，建议编译安装，默认安装到<code>/usr/local/bin</code>，使用<code>ttyd -h</code>查看帮助文档。因为是明文传输密码，所以不建议Basic Authentication方式做鉴权，要么域名强制https，要么ssl认证方式。ttyd还提供很多使用功能，比如接受链接参数、ssl传输等等。</p><h3 id="以非Root身份运行"><a href="#以非Root身份运行" class="headerlink" title="以非Root身份运行"></a>以非Root身份运行</h3><p>首先允许普通账户sudo ttyd时无需输入密码。运行<code>sudo visudo</code>，在末尾添加一行（xxx是当前用户名）</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xxx   ALL=NOPASSWD:/usr/local/bin/ttyd</span><br></pre></td></tr></table></figure><p>然后<code>pm2 start -x &#39;sudo ttyd --max-clients 2 login -p xxx&#39; -n ttyd</code> 即可</p><h3 id="以Root身份运行"><a href="#以Root身份运行" class="headerlink" title="以Root身份运行"></a>以Root身份运行</h3><p>需要修改<code>/etc/securetty</code>，在末尾增加</p><figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">pts/<span class="number">0</span></span><br><span class="line">pts/<span class="number">1</span></span><br><span class="line">pts/<span class="number">2</span></span><br></pre></td></tr></table></figure><p>然后运行<code>pm2 start -x &#39;ttyd --max-clients 2 login&#39; -n ttyd</code></p><h3 id="上传下载文件"><a href="#上传下载文件" class="headerlink" title="上传下载文件"></a>上传下载文件</h3><p>编译安装lrzsz，使用rz上传文件到服务器，sz下载文件到本地。此外还可以安装axel，取代wget多线程下载。</p><h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p><a href="https://blog.51cto.com/professor/2437216" target="_blank" rel="noopener">更优于 Shellinabox 的 web shell 工具 – ttyd</a><br><a href="https://blog.csdn.net/ljxfblog/article/details/38396421" target="_blank" rel="noopener">Linux下rz/sz安装及使用方法</a></p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;为了方便最快速度打开远程连接，浏览器是个不错的终端载体。在github上看到ttyd项目，麻雀虽小，五脏俱全，符合web terminal的需求，爱了爱了。另外，作者似乎还是MC玩家，折腾过树莓派，简直偶像有木有😘&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="原创" scheme="https://blog.zzbd.org/categories/%E5%8E%9F%E5%88%9B/"/>
+    
+    
+      <category term="linux" scheme="https://blog.zzbd.org/tags/linux/"/>
+    
+      <category term="web" scheme="https://blog.zzbd.org/tags/web/"/>
+    
+      <category term="教程" scheme="https://blog.zzbd.org/tags/%E6%95%99%E7%A8%8B/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>iTerm2增强SSH体验实战</title>
+    <link href="https://blog.zzbd.org/2020/03/03/iterm2/"/>
+    <id>https://blog.zzbd.org/2020/03/03/iterm2/</id>
+    <published>2020-03-03T06:55:54.000Z</published>
+    <updated>2020-05-30T12:19:24.302Z</updated>
+    
+    <content type="html"><![CDATA[<p>使用了许久的iTerm2，然而只是用了一个tab功能而已，直到某次不小心按了command+D..  So，折腾开始</p><h3 id="修改配色"><a href="#修改配色" class="headerlink" title="修改配色"></a>修改配色</h3><p>最新版iTerm2(v3.1.5)预置了两个<a href="http://ethanschoonover.com/solarized" target="_blank" rel="noopener">solarized</a>和tango，个人比较喜欢tango-dark。<a href="https://iterm2colorschemes.com/" target="_blank" rel="noopener">这里</a>有更多的主题可供选择。</p><a id="more"></a><h3 id="增强功能"><a href="#增强功能" class="headerlink" title="增强功能"></a>增强功能</h3><p>如果SSH登录到服务器，这部分需要在远端配置一遍。</p><h4 id="oh-my-zsh"><a href="#oh-my-zsh" class="headerlink" title="oh-my-zsh"></a>oh-my-zsh</h4><p>官方解释是</p><blockquote><p>A delightful community-driven (with 1500+ contributors) framework for managing your zsh configuration. Includes 200+ optional plugins (rails, git, OSX, hub, capistrano, brew, ant, php, python, etc), over 140 themes to spice up your morning, and an auto-update tool so that makes it easy to keep up with the latest updates from the community. <a href="https://ohmyz.sh/" target="_blank" rel="noopener">https://ohmyz.sh/</a></p><blockquote><p>一个有众多contributor参与的管理zsh配置的框架，包含200+可选插件 (rails, git, OSX, hub, capistrano, brew, ant, php, python, etc)以及140+满足各种口味的主题。</p></blockquote></blockquote><p>看来重点是玩插件。根据教程设置了<code>agnoster</code>主题</p><h4 id="复制到剪切板"><a href="#复制到剪切板" class="headerlink" title="复制到剪切板"></a>复制到剪切板</h4><p>本地可以直接<code>(content) | pbcopy</code>，远程借助<a href="https://github.com/skaji/remote-pbcopy-iterm2" target="_blank" rel="noopener">remote-pbcopy-iterm2</a></p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ssh (remote addr)</span><br><span class="line">wget -qO- https://github.com/skaji/remote-pbcopy-iterm2/releases/latest/download/pbcopy-linux-amd64.tar.gz | tar xvz - -C ~/.local/bin pbcopy</span><br></pre></td></tr></table></figure><p>iTerm2 选中<code>Applications in terminal may access clipboard</code>，</p><p>然后远程也可以像本地一样输出到剪切板了。</p><h4 id="防止断开连接"><a href="#防止断开连接" class="headerlink" title="防止断开连接"></a>防止断开连接</h4><p>在客户端增加配置</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">vim ~/.ssh/config</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># ~/.ssh/config begin</span></span></span><br><span class="line">Host *</span><br><span class="line">        SendEnv LANG LC_*</span><br><span class="line"> </span><br><span class="line">        # macOS Mojave 需要设置为 no 否则照样会断开 </span><br><span class="line">        TCPKeepAlive no</span><br><span class="line"> </span><br><span class="line">        # 客户端每隔 60S 发送一个空报文</span><br><span class="line">        ServerAliveInterval 60</span><br><span class="line"> </span><br><span class="line">        # macOS Mojave 需要增加，原因在于Qos检测命令不被对端支持，导致连接丢失</span><br><span class="line">        # packet_write_wait: Connection to 10.10.10.111 port 22: Broken pipe</span><br><span class="line">        IPQoS lowdelay throughput</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment"># ~/.ssh/config end</span></span></span><br></pre></td></tr></table></figure><h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><ul><li>语法高亮插件zsh-syntax-highlighting</li><li>命令补全插件zsh-autosuggestions</li></ul><h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p><a href="https://segmentfault.com/a/1190000012786464" target="_blank" rel="noopener">Mac终端配置，DIY你的Terminal （iTerm 2 + Oh My Zsh）</a></p><p><a href="https://www.mobibrw.com/2019/20007" target="_blank" rel="noopener">解决macOS Mojave(10.14.6) SSH连接断开问题</a></p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;使用了许久的iTerm2，然而只是用了一个tab功能而已，直到某次不小心按了command+D..  So，折腾开始&lt;/p&gt;
+&lt;h3 id=&quot;修改配色&quot;&gt;&lt;a href=&quot;#修改配色&quot; class=&quot;headerlink&quot; title=&quot;修改配色&quot;&gt;&lt;/a&gt;修改配色&lt;/h3&gt;&lt;p&gt;最新版iTerm2(v3.1.5)预置了两个&lt;a href=&quot;http://ethanschoonover.com/solarized&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;solarized&lt;/a&gt;和tango，个人比较喜欢tango-dark。&lt;a href=&quot;https://iterm2colorschemes.com/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;这里&lt;/a&gt;有更多的主题可供选择。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="原创" scheme="https://blog.zzbd.org/categories/%E5%8E%9F%E5%88%9B/"/>
+    
+    
+      <category term="linux" scheme="https://blog.zzbd.org/tags/linux/"/>
+    
+  </entry>
+  
+</feed>
